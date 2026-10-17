@@ -1,0 +1,8 @@
+{
+  "name": "harness-validation",
+  "description": "Support boundary validating skill package metadata, local links, JSON and repository size. Does not certify live production or delivery.",
+  "membership": [{"pathPattern": "(^|/)scripts/check-package\\.mjs$"}],
+  "specRefs": ["spec/design.md"],
+  "presetRules": [],
+  "templateRules": []
+}

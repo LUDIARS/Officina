@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "job_id": "",
+  "revision": "",
+  "artifacts": [],
+  "delivery": {
+    "transport": null,
+    "status": "saved_locally",
+    "destination_id": null,
+    "operation_id": null,
+    "receipt_id": null,
+    "recipient_verified": false
+  }
+}

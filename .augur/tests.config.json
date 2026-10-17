@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "repository": "Officina",
+  "defaultBus": "local",
+  "buses": {"local": {"type": "local", "env": []}},
+  "timeoutMs": 60000
+}
