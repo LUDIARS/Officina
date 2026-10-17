@@ -36,6 +36,8 @@ State: preparing → waiting_reference (if required) → producing → reviewing
 
 ## Implementation choice
 
+Claude final-response forwarding is an optional runtime integration described in [Discord summary](discord-summary.md). Its command hook and delivery receipts belong to the separate `discord-summary` support boundary. It does not change production acceptance or provide a Discord reply reader.
+
 The `harness-validation` support boundary owns the portable packaging check and its registered execution. It reads the package without modifying it; it rejects invalid metadata, broken local Markdown links, invalid JSON and oversized packages. It cannot establish production quality or external delivery. Revisor/Augur runs the same `node scripts/check-package.mjs` check registered in `.augur/tests.jsonl`.
 
 This release defines an instruction harness and job templates. It does not deploy a daemon, implement an OAuth client or create a new transfer service. Existing available tools perform I/O. The skill must stop with an explicit missing capability when those tools are absent. A bounded critic loop is part of the workflow; no unbounded autonomous cost or invented background heartbeat.

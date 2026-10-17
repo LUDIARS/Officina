@@ -1,0 +1,8 @@
+{
+  "name": "discord-summary",
+  "description": "Support boundary forwarding final Claude responses to a bound Discord thread with durable delivery evidence.",
+  "membership": [{"pathPattern": "(^|/)scripts/discord-summary/.*\\.mjs$"}, {"pathPattern": "(^|/)tests/discord-summary\\.test\\.mjs$"}],
+  "specRefs": ["spec/discord-summary.md"],
+  "presetRules": [],
+  "templateRules": []
+}

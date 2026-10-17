@@ -41,6 +41,8 @@ Blender・GPU・ネットワーク接続は毎回実環境で確認します。�
 
 ## 導入と検証の区別
 
-このリポジトリは**スキルと運用手順の定義**です。常駐サーバ、自動投稿ボット、Google Drive認証、Synergos管理APIの新規実装は含みません。接続設定・実行環境への導入・実際の制作と配達は別途実環境で確認します。詳細は `spec/design.md` と `docs/connection-check.md`。
+Claude Codeでは、終了時の最終応答を指定されたDiscordスレッドへ送るフックも利用できます。設定方法は[ClaudeのDiscord報告](docs/claude-discord-summary.md)。Webhookとスレッドを設定した新規セッションで使います。返信の読み取りは含みません。
+
+このリポジトリは**スキル・運用手順と任意の終了時投稿フック**を提供します。常駐サーバ、Google Drive認証、Synergos管理APIの新規実装は含みません。接続設定・実行環境への導入・実際の制作と配達は別途実環境で確認します。詳細は `spec/design.md` と `docs/connection-check.md`。
 
 Codexの配置形式は[公式スキル資料](https://learn.chatgpt.com/docs/build-skills)と[AGENTS.md資料](https://learn.chatgpt.com/docs/agent-configuration/agents-md)に基づきます。
