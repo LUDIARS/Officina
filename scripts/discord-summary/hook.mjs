@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { deliver } from './delivery.mjs';
+import { loadDestination } from './binding.mjs';
 
 try {
   const chunks = [];
@@ -11,7 +12,9 @@ try {
   }
   const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
   const directory = fileURLToPath(new URL('../../work/discord-summary/', import.meta.url));
-  const result = await deliver(input, { directory });
+  const needsDestination = input?.hook_event_name === 'Stop' && !input.agent_id
+    && typeof input.last_assistant_message === 'string' && input.last_assistant_message.trim();
+  const result = await deliver(input, { directory, env: needsDestination ? await loadDestination(directory) : {} });
   process.stderr.write(`Officina Discord: ${result.state}\n`);
   if (['delivery_unknown', 'rejected', 'existing_attempt'].includes(result.state)) process.exitCode = 1;
 } catch (error) {

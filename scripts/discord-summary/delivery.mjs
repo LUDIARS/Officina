@@ -6,6 +6,7 @@ const hash = text => createHash('sha256').update(text).digest('hex');
 
 export function destination(env) {
   if (!env.CC_DISCORD_WEBHOOK_URL || !env.CC_DISCORD_THREAD_ID) throw new Error('setup_required');
+  if (typeof env.CC_DISCORD_WEBHOOK_URL !== 'string' || typeof env.CC_DISCORD_THREAD_ID !== 'string') throw new Error('invalid_destination');
   let url;
   try { url = new URL(env.CC_DISCORD_WEBHOOK_URL); } catch { throw new Error('invalid_destination'); }
   if (url.protocol !== 'https:' || url.hostname !== 'discord.com' || url.port || url.username || url.password || url.hash

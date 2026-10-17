@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, cp, mkdir, writeFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deliver, destination, messageBody, redact } from '../scripts/discord-summary/delivery.mjs';
+import { bindDestination, loadDestination } from '../scripts/discord-summary/binding.mjs';
 
 const thread = '123456789012345678';
 // Synthetic fixture only: assemble the endpoint at test time rather than
@@ -27,6 +29,55 @@ test('destination is bound to Discord and the explicit existing thread', () => {
     assert.throws(() => destination({ ...env, CC_DISCORD_WEBHOOK_URL: bad }), /invalid_destination/);
   }
   assert.throws(() => destination({}), /setup_required/);
+});
+
+test('Cc destination binds once and rejects a later destination or conflicting environment', async t => {
+  const directory = await fixture(t);
+  const packet = { webhook_url: env.CC_DISCORD_WEBHOOK_URL, thread_id: thread };
+  assert.equal((await bindDestination(packet, directory)).state, 'bound');
+  assert.equal((await bindDestination(packet, directory)).state, 'already_bound');
+  assert.deepEqual(await loadDestination(directory, {}), env);
+  await assert.rejects(bindDestination({ ...packet, thread_id: '123456789012345699' }, directory), /destination_already_bound/);
+  await assert.rejects(loadDestination(directory, { CC_DISCORD_THREAD_ID: '123456789012345699' }), /destination_conflict/);
+  assert.deepEqual(await loadDestination(directory, {}), env);
+});
+
+test('Cloud binding works without persistent environment setup and retains delivery deduplication', async t => {
+  const directory = await fixture(t);
+  await assert.rejects(loadDestination(directory, {}), /setup_required/);
+  await bindDestination({ webhook_url: env.CC_DISCORD_WEBHOOK_URL, thread_id: thread }, directory);
+  let calls = 0;
+  const options = { directory, env: await loadDestination(directory, {}), fetcher: async () => { calls++; return receipt(); } };
+  assert.equal((await deliver(event, options)).state, 'delivered');
+  assert.equal((await deliver(event, options)).state, 'existing_attempt');
+  assert.equal(calls, 1);
+});
+
+test('dedicated CLI accepts Cc input without echoing credentials; Stop reads binding', async t => {
+  const root = await fixture(t);
+  const scripts = join(root, 'scripts', 'discord-summary');
+  await mkdir(scripts, { recursive: true });
+  await cp(new URL('../scripts/discord-summary/', import.meta.url), scripts, { recursive: true });
+  const childEnv = { ...process.env };
+  delete childEnv.CC_DISCORD_WEBHOOK_URL;
+  delete childEnv.CC_DISCORD_THREAD_ID;
+  const run = (name, args, input) => spawnSync(process.execPath, [join(scripts, name), ...args], {
+    input: JSON.stringify(input), encoding: 'utf8', env: childEnv, timeout: 5000,
+  });
+  const bound = run('tool.mjs', ['bind'], { webhook_url: env.CC_DISCORD_WEBHOOK_URL, thread_id: thread });
+  assert.equal(bound.status, 0, bound.stderr);
+  assert.equal(JSON.parse(bound.stdout).state, 'bound');
+  assert.ok(!bound.stdout.includes('fake-test-token'));
+  const conflict = run('tool.mjs', ['bind'], { webhook_url: env.CC_DISCORD_WEBHOOK_URL, thread_id: '123456789012345699' });
+  assert.equal(conflict.status, 1);
+  assert.equal(JSON.parse(conflict.stdout).error, 'destination_already_bound');
+  // Empty summary never reaches the network, even after a valid binding.
+  assert.equal(run('tool.mjs', ['publish'], { session_id: 'test', summary: '' }).status, 1);
+  assert.equal(run('hook.mjs', [], { hook_event_name: 'SubagentStop' }).status, 0);
+  await writeFile(join(root, 'work/discord-summary/destination.json'), '{invalid', { mode: 0o600 });
+  const corrupt = run('hook.mjs', [], event);
+  assert.equal(corrupt.status, 1);
+  assert.ok(!corrupt.stderr.includes('fake-test-token'));
 });
 
 test('known secrets are removed and both payload types disable mentions', async () => {

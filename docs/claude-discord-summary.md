@@ -2,7 +2,15 @@
 
 Officinaの `.claude/settings.json` は `Stop` フックを登録しています。Node.js 20以上が必要です。新しいクラウドセッションでこの設定を読み込みます。現在進行中のセッションへの反映は保証しません。
 
-クラウド環境の秘密設定に `CC_DISCORD_WEBHOOK_URL`、環境変数に `CC_DISCORD_THREAD_ID` を設定してください。Webhookは指定フォーラムに属するもの、thread IDはその中の既存スレッドを使います。鍵をroutine本文、Git、Discordのチャットへ貼らないでください。Ex Vaultへの保存だけではClaudeクラウドへの注入は行われません。
+Webhookと投稿先スレッドはCcが用意してCloudに渡します。利用者がCloudの環境設定へ毎回手入力する運用ではありません。Officinaには受け取り・投稿用の専用ツールを同梱しています。
+
+1. Ccは承認済みの非公開の受け渡し経路でWebhookと既存スレッドIDをCloudへ渡します。Ex Vaultへの保存だけでCloudに届くわけではありません。
+2. Cloudは `node scripts/discord-summary/tool.mjs bind` を実行し、標準入力にJSONの `webhook_url` と `thread_id` を渡します。秘密値をコマンド引数、Git、公開の依頼文、診断ログへ残しません。
+3. その後のStopフックは登録先へ最終応答を送ります。明示的に送る場合は `node scripts/discord-summary/tool.mjs publish` の標準入力へ `session_id` と `summary` を渡します。同じ内容の二重投稿を避けるため、Stopと同じセッションIDを使います。
+
+登録先はGit対象外の `work/discord-summary/destination.json` です。Cloudの作業フォルダを依頼ごとに分離してください。一度登録した別の投稿先への変更は拒否します。終了時に秘密設定を含む作業フォルダを破棄し、秘密のない配達記録だけ保管します。CcからCloudへの実際の受け渡しとDiscord配達は別途確認が必要です。
+
+既存の環境変数 `CC_DISCORD_WEBHOOK_URL` / `CC_DISCORD_THREAD_ID` も利用できますが、登録済みの投稿先と異なる場合は送信しません。Webhookは指定フォーラムに属するもの、thread IDはその中の既存スレッドを使います。
 
 ネットワーク設定で `discord.com` へのHTTPS通信を許可します。URLは `/api/webhooks/<id>/<token>` または `/api/v10/webhooks/<id>/<token>` 形式です。別サイト、別スレッドへのリダイレクトは拒否します。
 
